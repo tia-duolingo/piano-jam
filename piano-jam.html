@@ -711,7 +711,13 @@ async function initAudio() {
     baseUrl: 'https://tonejs.github.io/audio/salamander/',
     onload: () => {
       audioReady = true;
-      // Update play button once samples are ready
+      const btn = document.getElementById('btn-play');
+      if (btn && !isPlaying) btn.textContent = '▶';
+    },
+    onerror: (err) => {
+      console.warn('Sampler load error:', err);
+      // Force ready anyway — Tone.js can still play with partial buffers
+      audioReady = true;
       const btn = document.getElementById('btn-play');
       if (btn && !isPlaying) btn.textContent = '▶';
     }
@@ -719,6 +725,14 @@ async function initAudio() {
   // Show loading state on play button
   const btn = document.getElementById('btn-play');
   if (btn) btn.textContent = '…';
+  // Fallback: if onload never fires within 12s, force ready
+  setTimeout(() => {
+    if (!audioReady) {
+      audioReady = true;
+      const b = document.getElementById('btn-play');
+      if (b && !isPlaying) b.textContent = '▶';
+    }
+  }, 12000);
 }
 
 function midiToTone(midi) {
@@ -867,12 +881,20 @@ function getSongDuration() {
 function getCurrentSongPos() { return songPos; }
 
 function startPlayback() {
-  if (!sampler) return;
+  if (!sampler) {
+    // Audio not initialised yet — shouldn't happen normally
+    initAudio().then(() => startPlayback());
+    return;
+  }
   if (!audioReady) {
-    // Samples still loading — flash the button to give feedback
+    // Samples still loading — keep button as … and auto-start when ready
     const btn = document.getElementById('btn-play');
-    btn.textContent = '…';
-    setTimeout(() => { if (!isPlaying) btn.textContent = '▶'; }, 1500);
+    if (btn) btn.textContent = '…';
+    const waitAndPlay = () => {
+      if (audioReady) { startPlayback(); }
+      else setTimeout(waitAndPlay, 200);
+    };
+    setTimeout(waitAndPlay, 200);
     return;
   }
   songPos = loopStart;
@@ -893,6 +915,8 @@ function stopPlayback() {
 }
 
 function togglePlay() {
+  // Resume audio context on every user gesture (browser may suspend it)
+  Tone.start();
   if (isPlaying) stopPlayback();
   else startPlayback();
 }
@@ -925,7 +949,7 @@ function playFrame(perfNow) {
     const midi = note.midi, dur = note.dur, g = gen;
     setTimeout(() => {
       if (loopGen !== g || !isPlaying || !audioReady) return;
-      try { sampler.triggerAttackRelease(midiToTone(midi), dur, Tone.now()); } catch(e) {}
+      try { sampler.triggerAttackRelease(midiToTone(midi), dur, Tone.now() + 0.01); } catch(e) {}
     }, delayMs);
 
     scheduledUpTo = note.time;
