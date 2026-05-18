@@ -697,7 +697,10 @@ let heldBySong = new Set();   // keys currently "active" in the falling notes
 
 async function initAudio() {
   if (sampler) return;
-  await Tone.start();
+  // Don't await Tone.start() — it hangs if no user gesture.
+  // togglePlay() also calls Tone.start() on every press, which is the right
+  // place to resume the AudioContext since it IS triggered by a user gesture.
+  Tone.start().catch(() => {});
   sampler = new Tone.Sampler({
     urls: {
       A0:'A0.mp3', C1:'C1.mp3', 'D#1':'Ds1.mp3', 'F#1':'Fs1.mp3',
