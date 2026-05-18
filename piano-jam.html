@@ -329,6 +329,34 @@
 
     .wkey.active .klabel { color: #92400e; }
 
+    .wkey .kbd {
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 8px;
+      font-weight: 800;
+      color: #7c3aed;
+      background: rgba(124,58,237,0.12);
+      border-radius: 3px;
+      padding: 1px 3px;
+      pointer-events: none;
+      user-select: none;
+      line-height: 1.4;
+    }
+
+    .bkey .kbd {
+      position: absolute;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 7px;
+      font-weight: 800;
+      color: #c4b5fd;
+      pointer-events: none;
+      user-select: none;
+    }
+
     .bkey {
       position: absolute;
       background: linear-gradient(180deg, #1e1b4b 0%, #111827 100%);
@@ -591,6 +619,13 @@ function buildKeyboard() {
     lbl.textContent = midiNoteLetter(midi);
     el.appendChild(lbl);
 
+    if (MIDI_TO_KEY[midi]) {
+      const kbd = document.createElement('span');
+      kbd.className = 'kbd';
+      kbd.textContent = MIDI_TO_KEY[midi];
+      el.appendChild(kbd);
+    }
+
     el.addEventListener('pointerdown', (e) => { e.preventDefault(); triggerKeyDown(midi); });
     el.addEventListener('pointerup',   (e) => { e.preventDefault(); triggerKeyUp(midi); });
     el.addEventListener('pointerleave',(e) => { if (e.buttons) triggerKeyUp(midi); });
@@ -621,6 +656,13 @@ function buildKeyboard() {
     el.style.height = BK_H + 'px';
     el.style.top    = '0px';
     el.dataset.midi = midi;
+
+    if (MIDI_TO_KEY[midi]) {
+      const kbd = document.createElement('span');
+      kbd.className = 'kbd';
+      kbd.textContent = MIDI_TO_KEY[midi];
+      el.appendChild(kbd);
+    }
 
     el.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); triggerKeyDown(midi); });
     el.addEventListener('pointerup',   (e) => { e.stopPropagation(); e.preventDefault(); triggerKeyUp(midi); });
@@ -733,6 +775,62 @@ function onMIDIMsg(msg) {
 function setMidiStatus(connected, text) {
   document.getElementById('midi-led').classList.toggle('on', connected);
   document.getElementById('midi-label').textContent = text;
+}
+
+// ================================================================
+// COMPUTER KEYBOARD INPUT
+// ================================================================
+// Layout: home row = white keys (C5→F6), row above = black keys
+// Think of it like a piano: a=C5, s=D5, d=E5 ... k=C6, l=D6, ;=E6
+//
+//  [w][e]   [t][y][u]   [o][p]   [q=A6]
+// [a][s][d][f][g][h][j][k][l][;][']
+//   [z][x][c][v][b][n][m]  ← octave 4
+const KEY_MAP = {
+  // Octave 4 — bottom row
+  'z': 60, 'x': 62, 'c': 64, 'v': 65, 'b': 67, 'n': 69, 'm': 71,
+  // Octave 5 — home row (white) + above (black)
+  'a': 72, 'w': 73, 's': 74, 'e': 75, 'd': 76,
+  'f': 77, 't': 78, 'g': 79, 'y': 80, 'h': 81, 'u': 82, 'j': 83,
+  // Octave 6 — continue home row (white) + above (black)
+  'k': 84, 'o': 85, 'l': 86, 'p': 87, ';': 88, "'": 89, '[': 90,
+  // Bonus high notes
+  'q': 93,  // A6 — the big climax note in Hedwig's!
+};
+
+// Reverse map: midi → key label for display
+const MIDI_TO_KEY = {};
+Object.entries(KEY_MAP).forEach(([k, v]) => { MIDI_TO_KEY[v] = k === "'" ? "'" : k.toUpperCase(); });
+
+const heldByKbd = new Set();
+
+function initKeyboardInput() {
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    // Space = play/pause
+    if (e.key === ' ') { e.preventDefault(); togglePlay(); return; }
+    const midi = KEY_MAP[e.key] ?? KEY_MAP[e.key.toLowerCase()];
+    if (midi === undefined) return;
+    e.preventDefault();
+    if (heldByKbd.has(midi)) return;
+    heldByKbd.add(midi);
+    triggerKeyDown(midi);
+    // Scroll keyboard to show this key
+    const kl = keyLayout[midi];
+    if (kl) {
+      const scroll = document.getElementById('piano-scroll');
+      const target = kl.cx - scroll.clientWidth / 2;
+      scroll.scrollLeft = Math.max(0, target);
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    const midi = KEY_MAP[e.key] ?? KEY_MAP[e.key.toLowerCase()];
+    if (midi === undefined) return;
+    heldByKbd.delete(midi);
+    triggerKeyUp(midi);
+  });
 }
 
 // ================================================================
@@ -1066,6 +1164,8 @@ async function startLesson(songId) {
   await initAudio();
   // MIDI
   initMIDI();
+  // Computer keyboard
+  initKeyboardInput();
 
   // Build keyboard & resize canvas
   buildKeyboard();
