@@ -867,6 +867,7 @@ let loopStart    = 0;
 let loopEnd      = 52;
 let loopDuration = 52;
 let songPos      = 0;       // current song position in seconds
+let pausedAt     = 0;       // position when paused
 let lastFramePerf = 0;      // performance.now() at last RAF tick
 let scheduledUpTo = -Infinity;
 let loopGen      = 0;       // incremented on loop/stop to cancel stale timeouts
