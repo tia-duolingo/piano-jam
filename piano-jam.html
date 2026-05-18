@@ -709,8 +709,16 @@ async function initAudio() {
       A6:'A6.mp3', C7:'C7.mp3',
     },
     baseUrl: 'https://tonejs.github.io/audio/salamander/',
-    onload: () => { audioReady = true; }
+    onload: () => {
+      audioReady = true;
+      // Update play button once samples are ready
+      const btn = document.getElementById('btn-play');
+      if (btn && !isPlaying) btn.textContent = '▶';
+    }
   }).toDestination();
+  // Show loading state on play button
+  const btn = document.getElementById('btn-play');
+  if (btn) btn.textContent = '…';
 }
 
 function midiToTone(midi) {
@@ -803,8 +811,11 @@ const MIDI_TO_KEY = {};
 Object.entries(KEY_MAP).forEach(([k, v]) => { MIDI_TO_KEY[v] = k === "'" ? "'" : k.toUpperCase(); });
 
 const heldByKbd = new Set();
+let kbdListenersAttached = false;
 
 function initKeyboardInput() {
+  if (kbdListenersAttached) return;
+  kbdListenersAttached = true;
   window.addEventListener('keydown', (e) => {
     if (e.repeat) return;
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -841,10 +852,11 @@ let isPlaying    = false;
 let loopStart    = 0;
 let loopEnd      = 52;
 let loopDuration = 52;
-
-let partRef = null;
-let partStartPerf = 0;   // performance.now() when Transport last started
-let pausedAt = 0;        // song position when paused
+let songPos      = 0;       // current song position in seconds
+let lastFramePerf = 0;      // performance.now() at last RAF tick
+let scheduledUpTo = -Infinity;
+let loopGen      = 0;       // incremented on loop/stop to cancel stale timeouts
+const SCHED_AHEAD = 0.25;   // schedule 250ms ahead
 
 function getSongDuration() {
   if (!currentSong) return 60;
@@ -852,53 +864,30 @@ function getSongDuration() {
   return Math.ceil(last.time + last.dur + 0.5);
 }
 
-function getCurrentSongPos() {
-  if (!isPlaying) return pausedAt;
-  const elapsed = (performance.now() - partStartPerf) / 1000;
-  return loopStart + (elapsed % loopDuration);
-}
-
-function schedulePart() {
-  Tone.Transport.stop();
-  Tone.Transport.cancel(0);
-  if (partRef) { try { partRef.dispose(); } catch(e) {} partRef = null; }
-
-  loopDuration = loopEnd - loopStart;
-
-  const events = currentSong.notes
-    .filter(n => n.time >= loopStart && n.time < loopEnd)
-    .map(n => ({ time: n.time - loopStart, midi: n.midi, dur: n.dur }));
-
-  partRef = new Tone.Part((time, ev) => {
-    if (!audioReady) return;
-    try { sampler.triggerAttackRelease(midiToTone(ev.midi), ev.dur, time); } catch(e) {}
-  }, events);
-
-  partRef.loopStart = 0;
-  partRef.loopEnd   = loopDuration;
-  partRef.loop      = true;
-  partRef.start(0);
-
-  Tone.Transport.position = 0;
-}
+function getCurrentSongPos() { return songPos; }
 
 function startPlayback() {
   if (!sampler) return;
-  schedulePart();
-  Tone.Transport.start();
+  if (!audioReady) {
+    // Samples still loading — flash the button to give feedback
+    const btn = document.getElementById('btn-play');
+    btn.textContent = '…';
+    setTimeout(() => { if (!isPlaying) btn.textContent = '▶'; }, 1500);
+    return;
+  }
+  songPos = loopStart;
+  scheduledUpTo = loopStart - 0.001;
+  loopGen++;
   isPlaying = true;
-  partStartPerf = performance.now();
+  lastFramePerf = performance.now();
   document.getElementById('btn-play').textContent = '⏸';
-  requestAnimationFrame(animFrame);
+  requestAnimationFrame(playFrame);
 }
 
 function stopPlayback() {
-  pausedAt = getCurrentSongPos();
-  Tone.Transport.stop();
-  if (partRef) { try { partRef.stop(); } catch(e) {} }
   isPlaying = false;
+  loopGen++; // invalidates all pending scheduled timeouts
   document.getElementById('btn-play').textContent = '▶';
-  // Release any song-held keys
   heldBySong.forEach(m => { if (!heldByUser.has(m)) setKeyActive(m, false); });
   heldBySong.clear();
 }
@@ -906,6 +895,45 @@ function stopPlayback() {
 function togglePlay() {
   if (isPlaying) stopPlayback();
   else startPlayback();
+}
+
+function playFrame(perfNow) {
+  if (!isPlaying) return;
+
+  // Advance song position
+  const dt = Math.min((perfNow - lastFramePerf) / 1000, 0.1); // cap at 100ms
+  lastFramePerf = perfNow;
+  songPos += dt;
+
+  // Loop
+  if (songPos >= loopEnd) {
+    songPos = loopStart;
+    scheduledUpTo = loopStart - 0.001;
+    loopGen++;
+  }
+
+  // Schedule upcoming notes via setTimeout
+  const schedTarget = Math.min(songPos + SCHED_AHEAD, loopEnd);
+  const gen = loopGen;
+
+  for (const note of currentSong.notes) {
+    if (note.time <= scheduledUpTo) continue;
+    if (note.time > schedTarget) break;
+    if (note.time < loopStart) continue;
+
+    const delayMs = Math.max(0, (note.time - songPos) * 1000);
+    const midi = note.midi, dur = note.dur, g = gen;
+    setTimeout(() => {
+      if (loopGen !== g || !isPlaying || !audioReady) return;
+      try { sampler.triggerAttackRelease(midiToTone(midi), dur, Tone.now()); } catch(e) {}
+    }, delayMs);
+
+    scheduledUpTo = note.time;
+  }
+
+  drawCanvas();
+  updateScrubPlayhead(songPos);
+  requestAnimationFrame(playFrame);
 }
 
 // ================================================================
