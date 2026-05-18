@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Piano Jam 🎹</title>
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #07071a;
+      color: #fff;
+      height: 100dvh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* =========================================================
+       HOME SCREEN
+    ========================================================= */
+    #screen-home {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100dvh;
+      padding: 24px;
+      background: radial-gradient(ellipse at 50% 30%, #1e0a3c 0%, #07071a 70%);
+    }
+
+    .home-emoji { font-size: 72px; margin-bottom: 6px; }
+
+    .home-title {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #c084fc, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+
+    .home-tagline {
+      font-size: 13px;
+      color: #6b7280;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 52px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #374151;
+      margin-bottom: 12px;
+      align-self: flex-start;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .song-card {
+      background: linear-gradient(135deg, #1e1040 0%, #2d1b69 100%);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 20px;
+      padding: 20px 20px 20px 20px;
+      width: 100%;
+      max-width: 400px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .song-card:active {
+      transform: scale(0.97);
+      box-shadow: 0 0 40px rgba(139, 92, 246, 0.35);
+    }
+
+    .song-emoji { font-size: 40px; }
+
+    .song-meta { flex: 1; }
+    .song-name { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+    .song-artist { font-size: 13px; color: #a78bfa; }
+    .song-length { font-size: 11px; color: #4b5563; margin-top: 3px; }
+
+    .play-circle {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.5);
+      flex-shrink: 0;
+    }
+
+    /* =========================================================
+       LESSON SCREEN
+    ========================================================= */
+    #screen-lesson {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .lesson-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(7, 7, 26, 0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .btn-back {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #d1d5db;
+      padding: 7px 13px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .lesson-song-title {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 600;
+      color: #e9d5ff;
+    }
+
+    .midi-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #9ca3af;
+      background: rgba(255,255,255,0.05);
+      padding: 5px 9px;
+      border-radius: 8px;
+    }
+
+    .midi-led {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      transition: background 0.3s;
+    }
+    .midi-led.on { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+
+    .btn-play {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, #7c3aed, #4338ca);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 12px rgba(124, 58, 237, 0.5);
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s;
+      flex-shrink: 0;
+    }
+    .btn-play:active { transform: scale(0.9); }
+
+    /* Scrub / Loop Region */
+    .scrub-panel {
+      padding: 10px 16px 12px;
+      background: rgba(0,0,0,0.4);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      flex-shrink: 0;
+    }
+
+    .scrub-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .scrub-heading {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #4b5563;
+    }
+
+    .loop-time-display {
+      font-size: 11px;
+      color: #7c3aed;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+
+    .dual-range-wrap {
+      position: relative;
+      height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .range-track-bg {
+      position: absolute;
+      left: 0; right: 0;
+      height: 5px;
+      background: #1f2937;
+      border-radius: 3px;
+    }
+
+    .range-fill-bar {
+      position: absolute;
+      height: 5px;
+      background: linear-gradient(90deg, #7c3aed, #6366f1);
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    .range-playhead-line {
+      position: absolute;
+      width: 2px;
+      height: 18px;
+      background: #fbbf24;
+      border-radius: 1px;
+      pointer-events: none;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: left 0.05s linear;
+    }
+
+    .dual-range-wrap input[type=range] {
+      position: absolute;
+      width: 100%;
+      height: 32px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      pointer-events: none;
+      outline: none;
+    }
+
+    .dual-range-wrap input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #7c3aed;
+      pointer-events: all;
+      cursor: grab;
+      box-shadow: 0 0 10px rgba(124, 58, 237, 0.7);
+    }
+    .dual-range-wrap input[type=range]:active::-webkit-slider-thumb { cursor: grabbing; }
+    .dual-range-wrap input[type=range]::-moz-range-thumb {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #7c3aed;
+      pointer-events: all;
+      cursor: grab;
+      box-shadow: 0 0 10px rgba(124, 58, 237, 0.7);
+    }
+
+    /* Notes Canvas */
+    #notes-canvas {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      display: block;
+    }
+
+    /* Piano */
+    .piano-scroll-wrap {
+      flex-shrink: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      background: #0a0a1f;
+      border-top: 2px solid rgba(124, 58, 237, 0.2);
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .piano-scroll-wrap::-webkit-scrollbar { display: none; }
+
+    #piano-keys {
+      position: relative;
+      display: flex;
+      /* width & height set by JS */
+    }
+
+    .wkey {
+      position: relative;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, #e8e8e8 0%, #f5f5f5 100%);
+      border-left: 1px solid #aaa;
+      border-right: 1px solid #aaa;
+      border-bottom: 1px solid #888;
+      border-radius: 0 0 6px 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 6px;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.04s;
+    }
+
+    .wkey:active, .wkey.active {
+      background: linear-gradient(180deg, #fde68a 0%, #fbbf24 100%);
+      box-shadow: inset 0 -4px 8px rgba(0,0,0,0.15), 0 0 16px rgba(251, 191, 36, 0.5);
+    }
+
+    .wkey .klabel {
+      font-size: 9px;
+      font-weight: 700;
+      color: #9ca3af;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .wkey.active .klabel { color: #92400e; }
+
+    .bkey {
+      position: absolute;
+      background: linear-gradient(180deg, #1e1b4b 0%, #111827 100%);
+      border: 1px solid #000;
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+      cursor: pointer;
+      z-index: 2;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.04s;
+    }
+
+    .bkey:active, .bkey.active {
+      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.6);
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     HOME SCREEN
+============================================================ -->
+<div id="screen-home">
+  <div class="home-emoji">🎹</div>
+  <h1 class="home-title">Piano Jam</h1>
+  <p class="home-tagline">Music Jam 2026</p>
+
+  <p class="section-label">Available Songs</p>
+
+  <div class="song-card" onclick="startLesson('hedwigs')">
+    <div class="song-emoji">⚡</div>
+    <div class="song-meta">
+      <div class="song-name">Hedwig's Theme</div>
+      <div class="song-artist">Harry Potter</div>
+      <div class="song-length">~52 seconds · Piano</div>
+    </div>
+    <div class="play-circle">▶</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     LESSON SCREEN
+============================================================ -->
+<div id="screen-lesson" class="hidden">
+
+  <!-- Header -->
+  <div class="lesson-header">
+    <button class="btn-back" onclick="goHome()">← Back</button>
+    <span class="lesson-song-title" id="lsn-title">Hedwig's Theme</span>
+    <div class="midi-badge">
+      <div class="midi-led" id="midi-led"></div>
+      <span id="midi-label">No MIDI</span>
+    </div>
+    <button class="btn-play" id="btn-play" onclick="togglePlay()">▶</button>
+  </div>
+
+  <!-- Scrub / Loop Panel -->
+  <div class="scrub-panel">
+    <div class="scrub-meta">
+      <span class="scrub-heading">Loop Region</span>
+      <span class="loop-time-display" id="loop-time-display">0:00 – 0:52</span>
+    </div>
+    <div class="dual-range-wrap" id="dual-range-wrap">
+      <div class="range-track-bg"></div>
+      <div class="range-fill-bar" id="range-fill-bar"></div>
+      <div class="range-playhead-line" id="range-playhead"></div>
+      <input type="range" id="range-start" min="0" max="1000" value="0">
+      <input type="range" id="range-end"   min="0" max="1000" value="1000">
+    </div>
+  </div>
+
+  <!-- Falling Notes Canvas -->
+  <canvas id="notes-canvas"></canvas>
+
+  <!-- Piano Keyboard -->
+  <div class="piano-scroll-wrap" id="piano-scroll">
+    <div id="piano-keys"></div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+// ================================================================
+// SONG DATA — Hedwig's Theme (Harry Potter)
+// Format: { time: seconds, midi: MIDI note number, dur: seconds }
+// BPM ≈ 73, Time: 3/4
+// ================================================================
+const BPM = 73;
+const B   = 60 / BPM;          // quarter note
+const E   = B / 2;              // eighth note
+const DQ  = B * 1.5;            // dotted quarter
+const H   = B * 2;              // half note
+const DH  = B * 3;              // dotted half
+
+// MIDI note constants
+const NOTE = {
+  E5:76, F5:77, G5:79, A5:81, B5:83,
+  C6:84, D6:86, Eb6:87, E6:88, F6:89, G6:91, A6:93
+};
+
+function buildHedwigs() {
+  const notes = [];
+  let t = 0;
+  const n = (midi, dur) => { notes.push({ time: +t.toFixed(4), midi, dur: +(dur * 0.88).toFixed(4) }); t += dur; };
+  const r = (dur) => { t += dur; };
+
+  // ---- VERSE 1: Main theme, first time ----
+  n(NOTE.E5, E);       // pickup
+
+  n(NOTE.A5, B);
+  n(NOTE.C6, E);
+  n(NOTE.B5, E);
+  n(NOTE.A5, DQ);
+
+  n(NOTE.E6, E);
+  n(NOTE.D6, B);
+  n(NOTE.B5, DQ);
+
+  n(NOTE.C6, B);
+  n(NOTE.A5, H);
+  r(B);
+
+  // ---- PHRASE 2 ----
+  n(NOTE.A5, E);
+  n(NOTE.C6, B);
+  n(NOTE.A5, E);
+  n(NOTE.C6, DQ);
+
+  n(NOTE.B5, DH);
+
+  r(H);
+
+  // ---- VERSE 2: Main theme, different ending ----
+  n(NOTE.E5, E);       // pickup
+
+  n(NOTE.A5, B);
+  n(NOTE.C6, E);
+  n(NOTE.B5, E);
+  n(NOTE.A5, DQ);
+
+  n(NOTE.E6, E);
+  n(NOTE.F6, B);       // ← F6 instead of D6 — the twist!
+  n(NOTE.E6, DQ);
+
+  n(NOTE.C6, E);
+  n(NOTE.B5, E);
+  n(NOTE.A5, DQ);
+
+  r(E);
+
+  // ---- BRIDGE ----
+  n(NOTE.A5, E);
+  n(NOTE.B5, B);
+  n(NOTE.C6, E);
+  n(NOTE.C6, E);
+  n(NOTE.C6, E);
+  n(NOTE.D6, B);
+  n(NOTE.Eb6, DQ);
+
+  n(NOTE.D6, B);
+  n(NOTE.C6, E);
+  n(NOTE.B5, E);
+  n(NOTE.A5, B);
+  r(B);
+
+  n(NOTE.A5, E);
+  n(NOTE.C6, B);
+  n(NOTE.D6, E);
+  n(NOTE.Eb6, E);
+  n(NOTE.F6, DQ);
+
+  n(NOTE.A6, DH + B);  // big climax note!
+
+  // ---- VERSE 3: Return of main theme ----
+  r(E);
+  n(NOTE.E5, E);       // pickup
+
+  n(NOTE.A5, B);
+  n(NOTE.C6, E);
+  n(NOTE.B5, E);
+  n(NOTE.A5, DQ);
+
+  n(NOTE.E6, E);
+  n(NOTE.D6, B);
+  n(NOTE.B5, DQ);
+
+  n(NOTE.C6, B);
+  n(NOTE.A5, H);
+  r(B);
+
+  // ---- FINAL PHRASE ----
+  n(NOTE.A5, E);
+  n(NOTE.C6, B);
+  n(NOTE.A5, E);
+  n(NOTE.C6, DQ);
+
+  n(NOTE.B5, DH + H);  // long, final note
+
+  return notes;
+}
+
+const SONGS = {
+  hedwigs: {
+    title: "Hedwig's Theme",
+    notes: buildHedwigs()
+  }
+};
+
+// ================================================================
+// PIANO KEYBOARD CONFIG
+// ================================================================
+const PIANO_LOW  = 60;   // C4
+const PIANO_HIGH = 96;   // C7 (inclusive)
+
+const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const WHITE_IN_OCTAVE  = new Set([0,2,4,5,7,9,11]);
+const BLACK_IN_OCTAVE  = new Set([1,3,6,8,10]);
+// Black key offset (fraction of white-key-width from octave left edge to black key center)
+const BLACK_OFFSET_MAP = { 1:0.68, 3:1.68, 6:3.65, 8:4.65, 10:5.65 };
+
+const WK_W = 40, WK_H = 130, BK_W = 25, BK_H = 82;
+
+let keyLayout = {};  // midi → { x, w, isBlack }
+
+function midiIsBlack(midi) { return BLACK_IN_OCTAVE.has(midi % 12); }
+function midiNoteLetter(midi) {
+  const n = NOTE_NAMES_SHARP[midi % 12];
+  return n.includes('#') ? '' : n;
+}
+
+function buildKeyboard() {
+  const container = document.getElementById('piano-keys');
+  container.innerHTML = '';
+  keyLayout = {};
+
+  // Count white keys for total width
+  let wCount = 0;
+  for (let m = PIANO_LOW; m <= PIANO_HIGH; m++) if (!midiIsBlack(m)) wCount++;
+  container.style.width  = (wCount * WK_W) + 'px';
+  container.style.height = WK_H + 'px';
+
+  // Pass 1: white keys
+  let wx = 0;
+  for (let midi = PIANO_LOW; midi <= PIANO_HIGH; midi++) {
+    if (midiIsBlack(midi)) continue;
+    const el = document.createElement('div');
+    el.className = 'wkey';
+    el.style.width  = WK_W + 'px';
+    el.style.height = WK_H + 'px';
+    el.dataset.midi = midi;
+
+    const lbl = document.createElement('span');
+    lbl.className = 'klabel';
+    lbl.textContent = midiNoteLetter(midi);
+    el.appendChild(lbl);
+
+    el.addEventListener('pointerdown', (e) => { e.preventDefault(); triggerKeyDown(midi); });
+    el.addEventListener('pointerup',   (e) => { e.preventDefault(); triggerKeyUp(midi); });
+    el.addEventListener('pointerleave',(e) => { if (e.buttons) triggerKeyUp(midi); });
+
+    container.appendChild(el);
+    keyLayout[midi] = { x: wx, w: WK_W, isBlack: false, cx: wx + WK_W / 2 };
+    wx += WK_W;
+  }
+
+  // Pass 2: black keys (positioned absolutely)
+  let wxi = 0;
+  for (let midi = PIANO_LOW; midi <= PIANO_HIGH; midi++) {
+    if (!midiIsBlack(midi)) { wxi += WK_W; continue; }
+    const noteInOct = midi % 12;
+    const octaveBase = midi - noteInOct;  // C of this octave
+
+    // Find x of the C of this octave
+    let cx = 0;
+    for (let m = PIANO_LOW; m < octaveBase; m++) {
+      if (!midiIsBlack(m)) cx += WK_W;
+    }
+    const bx = cx + BLACK_OFFSET_MAP[noteInOct] * WK_W - BK_W / 2;
+
+    const el = document.createElement('div');
+    el.className = 'bkey';
+    el.style.left   = bx + 'px';
+    el.style.width  = BK_W + 'px';
+    el.style.height = BK_H + 'px';
+    el.style.top    = '0px';
+    el.dataset.midi = midi;
+
+    el.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); triggerKeyDown(midi); });
+    el.addEventListener('pointerup',   (e) => { e.stopPropagation(); e.preventDefault(); triggerKeyUp(midi); });
+    el.addEventListener('pointerleave',(e) => { if (e.buttons) triggerKeyUp(midi); });
+
+    container.appendChild(el);
+    keyLayout[midi] = { x: bx, w: BK_W, isBlack: true, cx: bx + BK_W / 2 };
+  }
+
+  // Scroll to show C5 roughly centred
+  setTimeout(() => {
+    const scroll = document.getElementById('piano-scroll');
+    if (keyLayout[72]) {
+      const target = keyLayout[72].cx - scroll.clientWidth / 2;
+      scroll.scrollLeft = Math.max(0, target);
+    }
+  }, 50);
+}
+
+function setKeyActive(midi, on) {
+  const el = document.querySelector(`#piano-keys [data-midi="${midi}"]`);
+  if (el) el.classList.toggle('active', on);
+}
+
+// ================================================================
+// AUDIO ENGINE  (Tone.js Salamander piano sampler)
+// ================================================================
+let sampler = null;
+let audioReady = false;
+let heldByUser = new Set();   // keys held by MIDI/touch
+let heldBySong = new Set();   // keys currently "active" in the falling notes
+
+async function initAudio() {
+  if (sampler) return;
+  await Tone.start();
+  sampler = new Tone.Sampler({
+    urls: {
+      A0:'A0.mp3', C1:'C1.mp3', Ds1:'Ds1.mp3', Fs1:'Fs1.mp3',
+      A1:'A1.mp3', C2:'C2.mp3', Ds2:'Ds2.mp3', Fs2:'Fs2.mp3',
+      A2:'A2.mp3', C3:'C3.mp3', Ds3:'Ds3.mp3', Fs3:'Fs3.mp3',
+      A3:'A3.mp3', C4:'C4.mp3', Ds4:'Ds4.mp3', Fs4:'Fs4.mp3',
+      A4:'A4.mp3', C5:'C5.mp3', Ds5:'Ds5.mp3', Fs5:'Fs5.mp3',
+      A5:'A5.mp3', C6:'C6.mp3', Ds6:'Ds6.mp3', Fs6:'Fs6.mp3',
+      A6:'A6.mp3', C7:'C7.mp3',
+    },
+    baseUrl: 'https://tonejs.github.io/audio/salamander/',
+    onload: () => { audioReady = true; }
+  }).toDestination();
+}
+
+function midiToTone(midi) {
+  const oct = Math.floor(midi / 12) - 1;
+  return NOTE_NAMES_SHARP[midi % 12] + oct;
+}
+
+function playOn(midi, vel = 0.85) {
+  if (!sampler || !audioReady) return;
+  try { sampler.triggerAttack(midiToTone(midi), Tone.now(), vel); } catch(e) {}
+}
+
+function playOff(midi) {
+  if (!sampler || !audioReady) return;
+  try { sampler.triggerRelease(midiToTone(midi), Tone.now() + 0.05); } catch(e) {}
+}
+
+function triggerKeyDown(midi) {
+  heldByUser.add(midi);
+  setKeyActive(midi, true);
+  playOn(midi, 0.9);
+}
+
+function triggerKeyUp(midi) {
+  heldByUser.delete(midi);
+  if (!heldBySong.has(midi)) setKeyActive(midi, false);
+  playOff(midi);
+}
+
+// ================================================================
+// MIDI ENGINE
+// ================================================================
+async function initMIDI() {
+  if (!navigator.requestMIDIAccess) {
+    setMidiStatus(false, 'No MIDI');
+    return;
+  }
+  try {
+    const access = await navigator.requestMIDIAccess();
+    connectMIDI(access);
+    access.onstatechange = () => connectMIDI(access);
+  } catch (e) {
+    setMidiStatus(false, 'Denied');
+  }
+}
+
+function connectMIDI(access) {
+  const inputs = [...access.inputs.values()];
+  if (!inputs.length) { setMidiStatus(false, 'No device'); return; }
+  inputs.forEach(i => { i.onmidimessage = onMIDIMsg; });
+  const name = inputs[0].name.length > 14 ? inputs[0].name.slice(0, 14) + '…' : inputs[0].name;
+  setMidiStatus(true, name);
+}
+
+function onMIDIMsg(msg) {
+  const [status, note, vel] = msg.data;
+  const cmd = status & 0xf0;
+  if (cmd === 0x90 && vel > 0) triggerKeyDown(note);
+  else if (cmd === 0x80 || (cmd === 0x90 && vel === 0)) triggerKeyUp(note);
+}
+
+function setMidiStatus(connected, text) {
+  document.getElementById('midi-led').classList.toggle('on', connected);
+  document.getElementById('midi-label').textContent = text;
+}
+
+// ================================================================
+// PLAYBACK & LOOP ENGINE
+// ================================================================
+let currentSong  = null;
+let isPlaying    = false;
+let loopStart    = 0;
+let loopEnd      = 52;
+let loopDuration = 52;
+
+let partRef = null;
+let partStartPerf = 0;   // performance.now() when Transport last started
+let pausedAt = 0;        // song position when paused
+
+function getSongDuration() {
+  if (!currentSong) return 60;
+  const last = currentSong.notes[currentSong.notes.length - 1];
+  return Math.ceil(last.time + last.dur + 0.5);
+}
+
+function getCurrentSongPos() {
+  if (!isPlaying) return pausedAt;
+  const elapsed = (performance.now() - partStartPerf) / 1000;
+  return loopStart + (elapsed % loopDuration);
+}
+
+function schedulePart() {
+  Tone.Transport.stop();
+  Tone.Transport.cancel(0);
+  if (partRef) { try { partRef.dispose(); } catch(e) {} partRef = null; }
+
+  loopDuration = loopEnd - loopStart;
+
+  const events = currentSong.notes
+    .filter(n => n.time >= loopStart && n.time < loopEnd)
+    .map(n => ({ time: n.time - loopStart, midi: n.midi, dur: n.dur }));
+
+  partRef = new Tone.Part((time, ev) => {
+    if (!audioReady) return;
+    try { sampler.triggerAttackRelease(midiToTone(ev.midi), ev.dur, time); } catch(e) {}
+  }, events);
+
+  partRef.loopStart = 0;
+  partRef.loopEnd   = loopDuration;
+  partRef.loop      = true;
+  partRef.start(0);
+
+  Tone.Transport.position = 0;
+}
+
+function startPlayback() {
+  if (!sampler) return;
+  schedulePart();
+  Tone.Transport.start();
+  isPlaying = true;
+  partStartPerf = performance.now();
+  document.getElementById('btn-play').textContent = '⏸';
+  requestAnimationFrame(animFrame);
+}
+
+function stopPlayback() {
+  pausedAt = getCurrentSongPos();
+  Tone.Transport.stop();
+  if (partRef) { try { partRef.stop(); } catch(e) {} }
+  isPlaying = false;
+  document.getElementById('btn-play').textContent = '▶';
+  // Release any song-held keys
+  heldBySong.forEach(m => { if (!heldByUser.has(m)) setKeyActive(m, false); });
+  heldBySong.clear();
+}
+
+function togglePlay() {
+  if (isPlaying) stopPlayback();
+  else startPlayback();
+}
+
+// ================================================================
+// CANVAS — FALLING NOTES
+// ================================================================
+const LOOKAHEAD_SEC = 3.5;   // seconds of notes visible above keyboard
+let canvasW = 0, canvasH = 0;
+
+function resizeCanvas() {
+  const cvs = document.getElementById('notes-canvas');
+  cvs.width  = window.innerWidth;
+  cvs.height = cvs.getBoundingClientRect().height;
+  canvasW = cvs.width;
+  canvasH = cvs.height;
+}
+
+function animFrame() {
+  drawCanvas();
+  if (isPlaying) requestAnimationFrame(animFrame);
+}
+
+function drawCanvas() {
+  const cvs = document.getElementById('notes-canvas');
+  const ctx = cvs.getContext('2d');
+
+  // ---- background ----
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, canvasH);
+  bgGrad.addColorStop(0,   '#07071a');
+  bgGrad.addColorStop(0.7, '#0d0a2e');
+  bgGrad.addColorStop(1,   '#130f38');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  if (!currentSong || !Object.keys(keyLayout).length) return;
+
+  const scrollLeft = document.getElementById('piano-scroll').scrollLeft;
+  const songPos    = getCurrentSongPos();
+
+  // ---- key lane guide lines ----
+  ctx.save();
+  for (let midi = PIANO_LOW; midi <= PIANO_HIGH; midi++) {
+    const kl = keyLayout[midi];
+    if (!kl || kl.isBlack) continue;
+    const sx = kl.cx - scrollLeft;
+    if (sx < 0 || sx > canvasW) continue;
+    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sx, 0);
+    ctx.lineTo(sx, canvasH);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ---- loop region marker on time axis ----
+  // (subtle gradient fade at loop end)
+
+  // ---- falling notes ----
+  const newSongActive = new Set();
+
+  for (const note of currentSong.notes) {
+    if (note.time < loopStart || note.time >= loopEnd) continue;
+
+    // Wrap note time relative to current position in loop
+    const loopPos = ((songPos - loopStart) % loopDuration + loopDuration) % loopDuration;
+    let relNoteTime = (note.time - loopStart) - loopPos;  // time until note (can be negative)
+
+    // If note is "behind" us in this loop pass, wrap it to next iteration
+    // We show up to LOOKAHEAD_SEC ahead, and allow ~0.3s behind for tail
+    if (relNoteTime < -(note.dur + 0.3)) {
+      relNoteTime += loopDuration;
+    }
+    if (relNoteTime > LOOKAHEAD_SEC) continue;    // not visible yet
+
+    const relNoteEnd = relNoteTime + note.dur;
+    if (relNoteEnd < 0) continue;                 // fully passed
+
+    const kl = keyLayout[note.midi];
+    if (!kl) continue;
+    const sx = kl.cx - scrollLeft;
+    if (sx < -40 || sx > canvasW + 40) continue;
+
+    // y: future notes at top, notes arriving at bottom
+    // relNoteTime == 0  →  note top reaches the hit line (bottom of canvas)
+    // relNoteTime == LOOKAHEAD → note top is at y=0
+    const yHit    = canvasH - 2;
+    const noteTopY  = yHit - ((Math.min(relNoteEnd,   LOOKAHEAD_SEC)) / LOOKAHEAD_SEC) * canvasH;
+    const noteBotY  = yHit - ((Math.max(relNoteTime,  0))             / LOOKAHEAD_SEC) * canvasH;
+    const noteH     = Math.max(6, noteBotY - noteTopY);
+    const noteW     = kl.isBlack ? 22 : 32;
+    const noteX     = sx - noteW / 2;
+
+    const isActive = relNoteTime <= 0 && relNoteEnd >= 0;
+    if (isActive) newSongActive.add(note.midi);
+
+    // ---- glow shadow ----
+    ctx.save();
+    if (isActive) {
+      ctx.shadowColor = '#fde68a';
+      ctx.shadowBlur  = 20;
+    } else {
+      ctx.shadowColor = '#7c3aed';
+      ctx.shadowBlur  = 8;
+    }
+
+    // ---- fill gradient ----
+    const grad = ctx.createLinearGradient(noteX, noteTopY, noteX, noteBotY);
+    if (isActive) {
+      grad.addColorStop(0, '#fef3c7');
+      grad.addColorStop(1, '#f59e0b');
+    } else {
+      // Fade in from top (lookahead edge)
+      const alpha = Math.min(1, (LOOKAHEAD_SEC - relNoteTime) / 0.5);
+      grad.addColorStop(0, `rgba(167, 139, 250, ${alpha})`);
+      grad.addColorStop(1, `rgba(109, 40, 217, ${alpha})`);
+    }
+
+    ctx.fillStyle = grad;
+    roundRectFill(ctx, noteX, noteTopY, noteW, noteH, 5);
+    ctx.restore();
+  }
+
+  // ---- update key highlights based on song playback ----
+  // Keys that were song-active but no longer are: remove highlight (unless held by user)
+  heldBySong.forEach(midi => {
+    if (!newSongActive.has(midi) && !heldByUser.has(midi)) {
+      setKeyActive(midi, false);
+    }
+  });
+  newSongActive.forEach(midi => {
+    if (!heldBySong.has(midi)) setKeyActive(midi, true);
+  });
+  heldBySong.clear();
+  newSongActive.forEach(m => heldBySong.add(m));
+
+  // ---- hit line ----
+  ctx.save();
+  const hlGrad = ctx.createLinearGradient(0, 0, canvasW, 0);
+  hlGrad.addColorStop(0,   'rgba(124,58,237,0)');
+  hlGrad.addColorStop(0.2, 'rgba(124,58,237,0.6)');
+  hlGrad.addColorStop(0.8, 'rgba(124,58,237,0.6)');
+  hlGrad.addColorStop(1,   'rgba(124,58,237,0)');
+  ctx.strokeStyle = hlGrad;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, canvasH - 2);
+  ctx.lineTo(canvasW, canvasH - 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // ---- playhead on scrub bar ----
+  updateScrubPlayhead(songPos);
+}
+
+function roundRectFill(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ================================================================
+// SCRUB BAR
+// ================================================================
+let songTotalDur = 60;
+
+function initScrubBar() {
+  songTotalDur = getSongDuration();
+  loopStart = 0;
+  loopEnd   = songTotalDur;
+  loopDuration = songTotalDur;
+  pausedAt  = 0;
+
+  const rs = document.getElementById('range-start');
+  const re = document.getElementById('range-end');
+  rs.value = 0;
+  re.value = 1000;
+  updateScrubFill();
+  updateLoopLabel();
+
+  rs.oninput = () => {
+    let sv = +rs.value, ev = +re.value;
+    if (sv >= ev - 20) { rs.value = ev - 20; sv = +rs.value; }
+    loopStart    = (sv / 1000) * songTotalDur;
+    loopDuration = loopEnd - loopStart;
+    if (isPlaying) { startPlayback(); }   // reschedule
+    else pausedAt = loopStart;
+    updateScrubFill();
+    updateLoopLabel();
+  };
+
+  re.oninput = () => {
+    let sv = +rs.value, ev = +re.value;
+    if (ev <= sv + 20) { re.value = sv + 20; ev = +re.value; }
+    loopEnd      = (ev / 1000) * songTotalDur;
+    loopDuration = loopEnd - loopStart;
+    if (isPlaying) { startPlayback(); }
+    updateScrubFill();
+    updateLoopLabel();
+  };
+}
+
+function updateScrubFill() {
+  const sv = +document.getElementById('range-start').value;
+  const ev = +document.getElementById('range-end').value;
+  const fill = document.getElementById('range-fill-bar');
+  fill.style.left  = (sv / 10) + '%';
+  fill.style.width = ((ev - sv) / 10) + '%';
+}
+
+function updateScrubPlayhead(songPos) {
+  const pct = songTotalDur > 0 ? (songPos / songTotalDur) * 100 : 0;
+  document.getElementById('range-playhead').style.left = `calc(${pct}% - 1px)`;
+}
+
+function updateLoopLabel() {
+  const fmt = s => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+  };
+  document.getElementById('loop-time-display').textContent =
+    `${fmt(loopStart)} – ${fmt(loopEnd)}`;
+}
+
+// ================================================================
+// IDLE DRAW LOOP (keeps canvas alive when paused)
+// ================================================================
+let idleRaf = null;
+function idleDraw() {
+  drawCanvas();
+  idleRaf = requestAnimationFrame(idleDraw);
+}
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+async function startLesson(songId) {
+  currentSong = SONGS[songId];
+  document.getElementById('lsn-title').textContent = currentSong.title;
+
+  document.getElementById('screen-home').classList.add('hidden');
+  document.getElementById('screen-lesson').classList.remove('hidden');
+
+  // Audio init (must follow user gesture)
+  await initAudio();
+  // MIDI
+  initMIDI();
+
+  // Build keyboard & resize canvas
+  buildKeyboard();
+  resizeCanvas();
+
+  // Init scrub
+  initScrubBar();
+
+  // Start idle draw
+  if (idleRaf) cancelAnimationFrame(idleRaf);
+  idleDraw();
+}
+
+function goHome() {
+  stopPlayback();
+  if (idleRaf) { cancelAnimationFrame(idleRaf); idleRaf = null; }
+  document.getElementById('screen-lesson').classList.add('hidden');
+  document.getElementById('screen-home').classList.remove('hidden');
+}
+
+window.addEventListener('resize', () => {
+  if (!document.getElementById('screen-lesson').classList.contains('hidden')) {
+    resizeCanvas();
+  }
+});
+</script>
+</body>
+</html>
