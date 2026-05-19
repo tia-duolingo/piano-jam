@@ -1012,6 +1012,7 @@ function playFrame(perfNow) {
     while (waitNoteIdx < currentSong.notes.length) {
       const wn = currentSong.notes[waitNoteIdx];
       if (wn.time < loopStart || wn.time >= loopEnd) { waitNoteIdx++; continue; }
+      if (wn.midi < PIANO_LOW || wn.midi > PIANO_HIGH) { waitNoteIdx++; continue; }
       if (songPos >= wn.time) {
         pendingAtLine      = wn;
         pendingArrivalPerf = perfNow;
