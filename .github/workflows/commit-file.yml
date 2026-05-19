@@ -1,0 +1,35 @@
+name: Update File
+on:
+  workflow_dispatch:
+    inputs:
+      content:
+        description: 'Base64 encoded file content'
+        required: true
+      path:
+        description: 'File path'
+        required: true
+        default: 'piano-jam.html'
+      message:
+        description: 'Commit message'
+        required: true
+        default: 'Update file'
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write and commit file
+        env:
+          CONTENT: ${{ inputs.content }}
+          FILE_PATH: ${{ inputs.path }}
+          COMMIT_MSG: ${{ inputs.message }}
+        run: |
+          echo "$CONTENT" | base64 -d > "$FILE_PATH"
+          git config user.email "tia@duolingo.com"
+          git config user.name "Piano Jam Bot"
+          git add "$FILE_PATH"
+          git commit -m "$COMMIT_MSG"
+          git push
