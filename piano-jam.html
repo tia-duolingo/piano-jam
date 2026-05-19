@@ -983,14 +983,12 @@ function playFrame(perfNow) {
 
   // ---- practice-mode freeze ----
   if (waitMode && pendingAtLine) {
-    const elapsed = perfNow - pendingArrivalPerf;
-    if (elapsed < WAIT_AUTO_MISS_MS) {
-      // Still waiting â hold position, just redraw
-      drawCanvas();
-      updateScrubPlayhead(songPos);
-      requestAnimationFrame(playFrame);
-      return;
-    }
+    // Hold position indefinitely until player hits the correct key
+    drawCanvas();
+    updateScrubPlayhead(songPos);
+    requestAnimationFrame(playFrame);
+    return;
+  }
     // Timed out â auto-miss
     flashKey(pendingAtLine.midi, 'miss');
     pendingAtLine = null;
