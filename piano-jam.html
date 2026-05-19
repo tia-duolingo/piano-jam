@@ -18,6 +18,40 @@
     }
 
     /* =========================================================
+       PORTRAIT OVERLAY
+    ========================================================= */
+    #portrait-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #07071a;
+      align-items: center;
+      justify-content: center;
+    }
+    .portrait-message {
+      text-align: center;
+      color: #a78bfa;
+      font-size: 1.2rem;
+      gap: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .portrait-icon {
+      font-size: 4rem;
+      animation: spin-hint 2s ease-in-out infinite;
+    }
+    @keyframes spin-hint {
+      0%   { transform: rotate(0deg); }
+      40%  { transform: rotate(90deg); }
+      100% { transform: rotate(90deg); }
+    }
+    @media (orientation: portrait) and (hover: none) {
+      #portrait-overlay { display: flex; }
+    }
+
+    /* =========================================================
        HOME SCREEN
     ========================================================= */
     #screen-home {
@@ -1314,6 +1348,14 @@ async function startLesson(songId) {
   document.getElementById('screen-home').classList.add('hidden');
   document.getElementById('screen-lesson').classList.remove('hidden');
 
+  // Request landscape — best-effort, requires user gesture (works on most Android Chrome)
+  try {
+    const el = document.documentElement;
+    const fs = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (fs) await fs.call(el).catch(() => {});
+    if (screen.orientation?.lock) await screen.orientation.lock('landscape').catch(() => {});
+  } catch(e) {}
+
   // Audio init (must follow user gesture)
   try { await initAudio(); } catch(e) { console.error('initAudio failed:', e); }
   // MIDI
@@ -1346,5 +1388,14 @@ window.addEventListener('resize', () => {
   }
 });
 </script>
+
+<!-- Portrait overlay -->
+<div id="portrait-overlay">
+  <div class="portrait-message">
+    <div class="portrait-icon">↺</div>
+    <div>Rotate your device to play</div>
+  </div>
+</div>
+
 </body>
 </html>
