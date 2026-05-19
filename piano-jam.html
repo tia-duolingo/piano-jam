@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Piano Jam ð¹</title>
+  <title>Piano Jam 🎹</title>
   <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -392,20 +392,20 @@
      HOME SCREEN
 ============================================================ -->
 <div id="screen-home">
-  <div class="home-emoji">ð¹</div>
+  <div class="home-emoji">🎹</div>
   <h1 class="home-title">Piano Jam</h1>
   <p class="home-tagline">Music Jam 2026</p>
 
   <p class="section-label">Available Songs</p>
 
   <div class="song-card" onclick="startLesson('hedwigs')">
-    <div class="song-emoji">â¡</div>
+    <div class="song-emoji">⚡</div>
     <div class="song-meta">
       <div class="song-name">Hedwig's Theme</div>
       <div class="song-artist">Harry Potter</div>
-      <div class="song-length">~52 seconds Â· Piano</div>
+      <div class="song-length">~52 seconds · Piano</div>
     </div>
-    <div class="play-circle">â¶</div>
+    <div class="play-circle">▶</div>
   </div>
 </div>
 
@@ -416,7 +416,7 @@
 
   <!-- Header -->
   <div class="lesson-header">
-    <button class="btn-back" onclick="goHome()">â Back</button>
+    <button class="btn-back" onclick="goHome()">← Back</button>
     <span class="lesson-song-title" id="lsn-title">Hedwig's Theme</span>
     <div class="midi-badge">
       <div class="midi-led" id="midi-led"></div>
@@ -429,7 +429,7 @@
   <div class="scrub-panel">
     <div class="scrub-meta">
       <span class="scrub-heading">Loop Region</span>
-      <span class="loop-time-display" id="loop-time-display">0:00 â 0:52</span>
+      <span class="loop-time-display" id="loop-time-display">0:00 – 0:52</span>
     </div>
     <div class="dual-range-wrap" id="dual-range-wrap">
       <div class="range-track-bg"></div>
@@ -454,9 +454,9 @@
 'use strict';
 
 // ================================================================
-// SONG DATA â Hedwig's Theme (Harry Potter)
+// SONG DATA — Hedwig's Theme (Harry Potter)
 // Format: { time: seconds, midi: MIDI note number, dur: seconds }
-// BPM â 73, Time: 3/4
+// BPM ≈ 73, Time: 3/4
 // ================================================================
 const BPM = 73;
 const B   = 60 / BPM;          // quarter note
@@ -512,7 +512,7 @@ function buildHedwigs() {
   n(NOTE.A5, DQ);
 
   n(NOTE.E6, E);
-  n(NOTE.F6, B);       // â F6 instead of D6 â the twist!
+  n(NOTE.F6, B);       // ← F6 instead of D6 — the twist!
   n(NOTE.E6, DQ);
 
   n(NOTE.C6, E);
@@ -583,7 +583,7 @@ const SONGS = {
 // PIANO KEYBOARD CONFIG
 // ================================================================
 const PIANO_LOW  = 60;   // C4
-const PIANO_HIGH = 84;   // C6 â matches Novation Launchkey Mini 25 (C4âC6)
+const PIANO_HIGH = 84;   // C6 — matches Novation Launchkey Mini 25 (C4–C6)
 
 const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const WHITE_IN_OCTAVE  = new Set([0,2,4,5,7,9,11]);
@@ -593,7 +593,7 @@ const BLACK_OFFSET_MAP = { 1:0.68, 3:1.68, 6:3.65, 8:4.65, 10:5.65 };
 
 const WK_W = 40, WK_H = 130, BK_W = 25, BK_H = 82;
 
-let keyLayout = {};  // midi â { x, w, isBlack }
+let keyLayout = {};  // midi → { x, w, isBlack }
 
 function midiIsBlack(midi) { return BLACK_IN_OCTAVE.has(midi % 12); }
 function midiNoteLetter(midi) {
@@ -716,7 +716,7 @@ let heldBySong = new Set();   // keys currently "active" in the falling notes
 
 async function initAudio() {
   if (sampler) return;
-  // Don't await Tone.start() â it hangs if no user gesture.
+  // Don't await Tone.start() — it hangs if no user gesture.
   // togglePlay() also calls Tone.start() on every press, which is the right
   // place to resume the AudioContext since it IS triggered by a user gesture.
   Tone.start().catch(() => {});
@@ -734,25 +734,25 @@ async function initAudio() {
     onload: () => {
       audioReady = true;
       const btn = document.getElementById('btn-play');
-      if (btn && !isPlaying) btn.textContent = 'â¶';
+      if (btn && !isPlaying) btn.textContent = '▶';
     },
     onerror: (err) => {
       console.warn('Sampler load error:', err);
-      // Force ready anyway â Tone.js can still play with partial buffers
+      // Force ready anyway — Tone.js can still play with partial buffers
       audioReady = true;
       const btn = document.getElementById('btn-play');
-      if (btn && !isPlaying) btn.textContent = 'â¶';
+      if (btn && !isPlaying) btn.textContent = '▶';
     }
   }).toDestination();
   // Show loading state on play button
   const btn = document.getElementById('btn-play');
-  if (btn) btn.textContent = 'â¦';
+  if (btn) btn.textContent = '…';
   // Fallback: if onload never fires within 12s, force ready
   setTimeout(() => {
     if (!audioReady) {
       audioReady = true;
       const b = document.getElementById('btn-play');
-      if (b && !isPlaying) b.textContent = 'â¶';
+      if (b && !isPlaying) b.textContent = '▶';
     }
   }, 12000);
 }
@@ -786,7 +786,7 @@ function triggerKeyDown(midi) {
       lastFramePerf = performance.now(); // reset so dt=0 on next frame (no time-jump)
       return;
     }
-    // Wrong note â play sound but don't advance
+    // Wrong note — play sound but don't advance
     setKeyActive(midi, true);
     playOn(midi, 0.9);
     return;
@@ -822,7 +822,7 @@ function connectMIDI(access) {
   const inputs = [...access.inputs.values()];
   if (!inputs.length) { setMidiStatus(false, 'No device'); return; }
   inputs.forEach(i => { i.onmidimessage = onMIDIMsg; });
-  const name = inputs[0].name.length > 14 ? inputs[0].name.slice(0, 14) + 'â¦' : inputs[0].name;
+  const name = inputs[0].name.length > 14 ? inputs[0].name.slice(0, 14) + '…' : inputs[0].name;
   setMidiStatus(true, name);
 }
 
@@ -841,25 +841,25 @@ function setMidiStatus(connected, text) {
 // ================================================================
 // COMPUTER KEYBOARD INPUT
 // ================================================================
-// Layout: home row = white keys (C5âF6), row above = black keys
+// Layout: home row = white keys (C5→F6), row above = black keys
 // Think of it like a piano: a=C5, s=D5, d=E5 ... k=C6, l=D6, ;=E6
 //
 //  [w][e]   [t][y][u]   [o][p]   [q=A6]
 // [a][s][d][f][g][h][j][k][l][;][']
-//   [z][x][c][v][b][n][m]  â octave 4
+//   [z][x][c][v][b][n][m]  ← octave 4
 const KEY_MAP = {
-  // Octave 4 â bottom row
+  // Octave 4 — bottom row
   'z': 60, 'x': 62, 'c': 64, 'v': 65, 'b': 67, 'n': 69, 'm': 71,
-  // Octave 5 â home row (white) + above (black)
+  // Octave 5 — home row (white) + above (black)
   'a': 72, 'w': 73, 's': 74, 'e': 75, 'd': 76,
   'f': 77, 't': 78, 'g': 79, 'y': 80, 'h': 81, 'u': 82, 'j': 83,
-  // Octave 6 â continue home row (white) + above (black)
+  // Octave 6 — continue home row (white) + above (black)
   'k': 84, 'o': 85, 'l': 86, 'p': 87, ';': 88, "'": 89, '[': 90,
   // Bonus high notes
-  'q': 93,  // A6 â the big climax note in Hedwig's!
+  'q': 93,  // A6 — the big climax note in Hedwig's!
 };
 
-// Reverse map: midi â key label for display
+// Reverse map: midi → key label for display
 const MIDI_TO_KEY = {};
 Object.entries(KEY_MAP).forEach(([k, v]) => { MIDI_TO_KEY[v] = k === "'" ? "'" : k.toUpperCase(); });
 
@@ -917,8 +917,8 @@ let waitMode           = true;   // track freezes until player hits each note
 let pendingAtLine      = null;   // note object frozen at the hit line
 let pendingArrivalPerf = 0;      // performance.now() when that note arrived
 let waitNoteIdx        = 0;      // index into currentSong.notes of next note to wait for
-const WAIT_ON_TIME_MS   = 350;   // â¤350ms after arrival â green; else â orange
-const WAIT_AUTO_MISS_MS = 2500;  // after 2.5s with no hit â auto-advance as miss
+const WAIT_ON_TIME_MS   = 350;   // ≤350ms after arrival → green; else → orange
+const WAIT_AUTO_MISS_MS = 2500;  // after 2.5s with no hit → auto-advance as miss
 
 function getSongDuration() {
   if (!currentSong) return 60;
@@ -930,14 +930,14 @@ function getCurrentSongPos() { return songPos; }
 
 function startPlayback() {
   if (!sampler) {
-    // Audio not initialised yet â shouldn't happen normally
+    // Audio not initialised yet — shouldn't happen normally
     initAudio().then(() => startPlayback());
     return;
   }
   if (!audioReady) {
-    // Samples still loading â keep button as â¦ and auto-start when ready
+    // Samples still loading — keep button as … and auto-start when ready
     const btn = document.getElementById('btn-play');
-    if (btn) btn.textContent = 'â¦';
+    if (btn) btn.textContent = '…';
     const waitAndPlay = () => {
       if (audioReady) { startPlayback(); }
       else setTimeout(waitAndPlay, 200);
@@ -958,7 +958,7 @@ function startPlayback() {
   }
   isPlaying = true;
   lastFramePerf = performance.now();
-  document.getElementById('btn-play').textContent = 'â¸';
+  document.getElementById('btn-play').textContent = '⏸';
   requestAnimationFrame(playFrame);
 }
 
@@ -966,7 +966,7 @@ function stopPlayback() {
   isPlaying = false;
   loopGen++; // invalidates all pending scheduled timeouts
   pendingAtLine = null;
-  document.getElementById('btn-play').textContent = 'â¶';
+  document.getElementById('btn-play').textContent = '▶';
   heldBySong.forEach(m => { if (!heldByUser.has(m)) setKeyActive(m, false); });
   heldBySong.clear();
 }
@@ -1031,7 +1031,7 @@ function playFrame(perfNow) {
     if (note.time > schedTarget) break;
     if (note.time < loopStart) continue;
 
-    // In practice mode, skip the pending note â user plays it
+    // In practice mode, skip the pending note — user plays it
     if (waitMode && pendingAtLine && note === pendingAtLine) {
       scheduledUpTo = note.time;
       continue;
@@ -1053,7 +1053,7 @@ function playFrame(perfNow) {
 }
 
 // ================================================================
-// CANVAS â FALLING NOTES
+// CANVAS — FALLING NOTES
 // ================================================================
 const LOOKAHEAD_SEC = 3.5;   // seconds of notes visible above keyboard
 let canvasW = 0, canvasH = 0;
@@ -1134,8 +1134,8 @@ function drawCanvas() {
     if (sx < -40 || sx > canvasW + 40) continue;
 
     // y: future notes at top, notes arriving at bottom
-    // relNoteTime == 0  â  note top reaches the hit line (bottom of canvas)
-    // relNoteTime == LOOKAHEAD â note top is at y=0
+    // relNoteTime == 0  →  note top reaches the hit line (bottom of canvas)
+    // relNoteTime == LOOKAHEAD → note top is at y=0
     const yHit    = canvasH - 2;
     const noteTopY  = yHit - ((Math.min(relNoteEnd,   LOOKAHEAD_SEC)) / LOOKAHEAD_SEC) * canvasH;
     const noteBotY  = yHit - ((Math.max(relNoteTime,  0))             / LOOKAHEAD_SEC) * canvasH;
@@ -1165,7 +1165,7 @@ function drawCanvas() {
     // ---- fill gradient ----
     const grad = ctx.createLinearGradient(noteX, noteTopY, noteX, noteBotY);
     if (isPending) {
-      // Bright white/lavender â stands out from purple falling notes
+      // Bright white/lavender — stands out from purple falling notes
       grad.addColorStop(0, '#f5f3ff');
       grad.addColorStop(1, '#c4b5fd');
     } else if (isActive) {
@@ -1292,7 +1292,7 @@ function updateLoopLabel() {
     return `${m}:${sec.toString().padStart(2,'0')}`;
   };
   document.getElementById('loop-time-display').textContent =
-    `${fmt(loopStart)} â ${fmt(loopEnd)}`;
+    `${fmt(loopStart)} – ${fmt(loopEnd)}`;
 }
 
 // ================================================================
