@@ -192,6 +192,21 @@
     }
     .midi-led.on { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
 
+    .rep-counter {
+      display: flex;
+      align-items: center;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #a78bfa;
+      letter-spacing: 0.02em;
+      transition: color 0.15s, transform 0.15s;
+    }
+    .rep-sep { opacity: 0.5; font-weight: 400; }
+    .rep-counter.tainted { color: #f87171; }
+    .rep-counter.flash-good { color: #4ade80; transform: scale(1.2); }
+    .rep-counter.flash-fail { color: #f87171; transform: scale(1.1); }
+    .rep-counter.flash-win  { color: #fbbf24; transform: scale(1.35); }
+
     .btn-play {
       width: 42px; height: 42px;
       background: linear-gradient(135deg, #7c3aed, #4338ca);
@@ -455,6 +470,9 @@
     <div class="midi-badge">
       <div class="midi-led" id="midi-led"></div>
       <span id="midi-label">No MIDI</span>
+    </div>
+    <div class="rep-counter" id="rep-counter">
+      <span class="rep-num" id="rep-count">0</span><span class="rep-sep"> / 7</span>
     </div>
     <span id="btn-play" style="display:none"></span>
   </div>
@@ -820,7 +838,8 @@ function triggerKeyDown(midi) {
       lastFramePerf = performance.now(); // reset so dt=0 on next frame (no time-jump)
       return;
     }
-    // Wrong note — play sound but don't advance
+    // Wrong note — play sound but don't advance; taint this run
+    if (!runHadError) { runHadError = true; updateRepCounter('fail'); }
     setKeyActive(midi, true);
     playOn(midi, 0.9);
     return;
@@ -954,6 +973,25 @@ let waitNoteIdx        = 0;      // index into currentSong.notes of next note to
 const WAIT_ON_TIME_MS   = 350;   // ≤350ms after arrival → green; else → orange
 const WAIT_AUTO_MISS_MS = 2500;  // after 2.5s with no hit → auto-advance as miss
 
+// ---- Deep Sections rep counter ----
+let successfulRuns = 0;
+let runHadError    = false;
+const TARGET_RUNS  = 7;
+
+function updateRepCounter(flash) {
+  const el = document.getElementById('rep-counter');
+  const ct = document.getElementById('rep-count');
+  if (!el || !ct) return;
+  ct.textContent = successfulRuns;
+  el.className = 'rep-counter' + (runHadError && !flash ? ' tainted' : '');
+  if (flash) {
+    el.classList.add('flash-' + flash);
+    setTimeout(() => {
+      el.className = 'rep-counter' + (runHadError ? ' tainted' : '');
+    }, 500);
+  }
+}
+
 function getSongDuration() {
   if (!currentSong) return 60;
   const last = currentSong.notes[currentSong.notes.length - 1];
@@ -985,6 +1023,9 @@ function startPlayback() {
   // Reset practice-mode tracking
   pendingAtLine = null;
   waitNoteIdx = 0;
+  successfulRuns = 0;
+  runHadError = false;
+  updateRepCounter();
   if (currentSong) {
     for (let i = 0; i < currentSong.notes.length; i++) {
       if (currentSong.notes[i].time >= loopStart) { waitNoteIdx = i; break; }
@@ -1031,6 +1072,22 @@ function playFrame(perfNow) {
 
   // ---- loop ----
   if (songPos >= loopEnd) {
+    // ---- rep counter update ----
+    if (waitMode) {
+      if (!runHadError) {
+        successfulRuns++;
+        if (successfulRuns >= TARGET_RUNS) {
+          updateRepCounter('win');
+          setTimeout(() => { successfulRuns = 0; runHadError = false; updateRepCounter(); }, 1200);
+        } else {
+          updateRepCounter('good');
+        }
+      } else {
+        successfulRuns = 0;
+        updateRepCounter('fail');
+      }
+      runHadError = false;
+    }
     songPos = loopStart;
     scheduledUpTo = loopStart - 0.001;
     loopGen++;
