@@ -757,8 +757,17 @@ function buildKeyboard() {
   // Count white keys for total width
   let wCount = 0;
   for (let m = PIANO_LOW; m <= PIANO_HIGH; m++) if (!midiIsBlack(m)) wCount++;
-  container.style.width  = (wCount * WK_W) + 'px';
-  container.style.height = WK_H + 'px';
+
+  // Fit keys to container width — no blank space on the right
+  const scroll = document.getElementById('piano-scroll');
+  const availW = scroll ? scroll.clientWidth : wCount * WK_W;
+  const wkw = Math.max(WK_W, Math.floor(availW / wCount));
+  const wkh = WK_H;
+  const bkw = Math.round(wkw * (BK_W / WK_W));
+  const bkh = BK_H;
+
+  container.style.width  = (wCount * wkw) + 'px';
+  container.style.height = wkh + 'px';
 
   // Pass 1: white keys
   let wx = 0;
@@ -766,8 +775,8 @@ function buildKeyboard() {
     if (midiIsBlack(midi)) continue;
     const el = document.createElement('div');
     el.className = 'wkey';
-    el.style.width  = WK_W + 'px';
-    el.style.height = WK_H + 'px';
+    el.style.width  = wkw + 'px';
+    el.style.height = wkh + 'px';
     el.dataset.midi = midi;
 
     const lbl = document.createElement('span');
@@ -787,8 +796,8 @@ function buildKeyboard() {
     el.addEventListener('pointerleave',(e) => { if (e.buttons) triggerKeyUp(midi); });
 
     container.appendChild(el);
-    keyLayout[midi] = { x: wx, w: WK_W, isBlack: false, cx: wx + WK_W / 2 };
-    wx += WK_W;
+    keyLayout[midi] = { x: wx, w: wkw, isBlack: false, cx: wx + wkw / 2 };
+    wx += wkw;
   }
 
   // Pass 2: black keys (positioned absolutely)
@@ -801,15 +810,15 @@ function buildKeyboard() {
     // Find x of the C of this octave
     let cx = 0;
     for (let m = PIANO_LOW; m < octaveBase; m++) {
-      if (!midiIsBlack(m)) cx += WK_W;
+      if (!midiIsBlack(m)) cx += wkw;
     }
-    const bx = cx + BLACK_OFFSET_MAP[noteInOct] * WK_W - BK_W / 2;
+    const bx = cx + BLACK_OFFSET_MAP[noteInOct] * wkw - bkw / 2;
 
     const el = document.createElement('div');
     el.className = 'bkey';
     el.style.left   = bx + 'px';
-    el.style.width  = BK_W + 'px';
-    el.style.height = BK_H + 'px';
+    el.style.width  = bkw + 'px';
+    el.style.height = bkh + 'px';
     el.style.top    = '0px';
     el.dataset.midi = midi;
 
@@ -825,12 +834,11 @@ function buildKeyboard() {
     el.addEventListener('pointerleave',(e) => { if (e.buttons) triggerKeyUp(midi); });
 
     container.appendChild(el);
-    keyLayout[midi] = { x: bx, w: BK_W, isBlack: true, cx: bx + BK_W / 2 };
+    keyLayout[midi] = { x: bx, w: bkw, isBlack: true, cx: bx + bkw / 2 };
   }
 
   // Scroll to show C5 roughly centred
   setTimeout(() => {
-    const scroll = document.getElementById('piano-scroll');
     if (keyLayout[72]) {
       const target = keyLayout[72].cx - scroll.clientWidth / 2;
       scroll.scrollLeft = Math.max(0, target);
