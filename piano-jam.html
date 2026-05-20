@@ -650,8 +650,10 @@ const SONGS = {
   }
 };
 
-const PIANO_LOW  = 48;  // C3 — Loog x Duolingo keyboard start
-const PIANO_HIGH = 84;  // C6 — Loog x Duolingo keyboard end
+let PIANO_LOW  = 48;  // updated dynamically per song
+let PIANO_HIGH = 84;  // updated dynamically per song
+const PIANO_LOW_MIN  = 48;  // physical keyboard limits (Loog x Duolingo: C3–C6)
+const PIANO_HIGH_MAX = 84;
 
 const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const WHITE_IN_OCTAVE  = new Set([0,2,4,5,7,9,11]);
@@ -1433,6 +1435,20 @@ async function startLesson(songId) {
   initMIDI();
   // Computer keyboard
   initKeyboardInput();
+
+  // Set keyboard range to only cover notes used in this song,
+  // snapped to nearest C below/above for clean octave boundaries
+  (function() {
+    const midis = currentSong.notes.map(n => n.midi);
+    let lo = Math.min(...midis);
+    let hi = Math.max(...midis);
+    // Snap lo down to nearest C (midi % 12 === 0)
+    while (lo % 12 !== 0) lo--;
+    // Snap hi up to nearest C
+    while (hi % 12 !== 0) hi++;
+    PIANO_LOW  = Math.max(lo, PIANO_LOW_MIN);
+    PIANO_HIGH = Math.min(hi, PIANO_HIGH_MAX);
+  })();
 
   // Build keyboard & resize canvas
   buildKeyboard();
