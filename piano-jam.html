@@ -1107,6 +1107,13 @@ function playFrame(perfNow) {
         pendingAtLine      = wn;
         pendingArrivalPerf = perfNow;
         songPos            = wn.time; // snap to exact note time
+        // Key already held — count as immediate hit
+        if (heldByUser.has(wn.midi)) {
+          flashKey(wn.midi, 'good');
+          pendingAtLine = null;
+          waitNoteIdx++;
+          lastFramePerf = perfNow;
+        }
       }
       break;
     }
