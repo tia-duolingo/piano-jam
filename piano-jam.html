@@ -551,12 +551,12 @@
   <p class="home-tagline">Music Jam 2026</p>
 
 
-  <div class="song-card" onclick="startLesson('hedwigs')">
+  <div class="song-card" onclick="startLesson('happybirthday')">
     <div class="song-emoji">🎹</div>
     <div class="song-meta">
-      <div class="song-name">Hedwig's Theme</div>
-      <div class="song-artist">Harry Potter</div>
-      <div class="song-length">~52 seconds · Piano</div>
+      <div class="song-name">Happy Birthday</div>
+      <div class="song-artist">Traditional</div>
+      <div class="song-length">~17 seconds · Piano</div>
     </div>
     <div class="play-circle">▶</div>
   </div>
@@ -583,7 +583,7 @@
   <div class="scrub-panel hidden" id="scrub-panel">
     <div class="scrub-meta">
       <span class="scrub-heading">Loop Region</span>
-      <span class="loop-time-display" id="loop-time-display">0:00 – 0:52</span>
+      <span class="loop-time-display" id="loop-time-display">0:00 – 0:17</span>
     </div>
     <div class="dual-range-wrap" id="dual-range-wrap">
       <div class="range-track-bg"></div>
@@ -611,136 +611,47 @@
 'use strict';
 
 // ================================================================
-// SONG DATA — Hedwig's Theme (Harry Potter)
+// SONG DATA — Happy Birthday to You
 // Format: { time: seconds, midi: MIDI note number, dur: seconds }
-// BPM ≈ 73, Time: 3/4
+// BPM = 100, Time: 3/4
 // ================================================================
-const BPM = 73;
-const B   = 60 / BPM;          // quarter note
-const E   = B / 2;              // eighth note
-const DQ  = B * 1.5;            // dotted quarter
-const H   = B * 2;              // half note
-const DH  = B * 3;              // dotted half
+const BPM = 100;
+const Q  = 60 / BPM;   // 0.6s quarter note
+const E  = Q / 2;       // 0.3s eighth note
+const H  = Q * 2;       // 1.2s half note
+const DH = Q * 3;       // 1.8s dotted half
 
 // MIDI note constants
 const NOTE = {
-  E5:76, F5:77, G5:79, A5:81, B5:83,
-  C6:84, D6:86, Eb6:87, E6:88, F6:89, G6:91, A6:93
+  C4: 60, D4: 62, E4: 64, F4: 65, G4: 67, A4: 69, Bb4: 70, C5: 72
 };
 
-function buildHedwigs() {
+function buildHappyBirthday() {
   const notes = [];
   let t = 0;
-  const n = (midi, dur) => { notes.push({ time: +t.toFixed(4), midi, dur: +(dur * 0.88).toFixed(4) }); t += dur; };
-  const r = (dur) => { t += dur; };
+  const n = (midi, dur) => { notes.push({ time: +t.toFixed(4), midi, dur: +(dur * 0.85).toFixed(4) }); t += dur; };
 
-  // ---- VERSE 1: Main theme, first time ----
-  n(NOTE.E5, E);       // pickup
-
-  n(NOTE.A5, B);
-  n(NOTE.C6, E);
-  n(NOTE.B5, E);
-  n(NOTE.A5, DQ);
-
-  n(NOTE.E6, E);
-  n(NOTE.D6, B);
-  n(NOTE.B5, DQ);
-
-  n(NOTE.C6, B);
-  n(NOTE.A5, H);
-  r(B);
-
-  // ---- PHRASE 2 ----
-  n(NOTE.A5, E);
-  n(NOTE.C6, B);
-  n(NOTE.A5, E);
-  n(NOTE.C6, DQ);
-
-  n(NOTE.B5, DH);
-
-  r(H);
-
-  // ---- VERSE 2: Main theme, different ending ----
-  n(NOTE.E5, E);       // pickup
-
-  n(NOTE.A5, B);
-  n(NOTE.C6, E);
-  n(NOTE.B5, E);
-  n(NOTE.A5, DQ);
-
-  n(NOTE.E6, E);
-  n(NOTE.F6, B);       // ← F6 instead of D6 — the twist!
-  n(NOTE.E6, DQ);
-
-  n(NOTE.C6, E);
-  n(NOTE.B5, E);
-  n(NOTE.A5, DQ);
-
-  r(E);
-
-  // ---- BRIDGE ----
-  n(NOTE.A5, E);
-  n(NOTE.B5, B);
-  n(NOTE.C6, E);
-  n(NOTE.C6, E);
-  n(NOTE.C6, E);
-  n(NOTE.D6, B);
-  n(NOTE.Eb6, DQ);
-
-  n(NOTE.D6, B);
-  n(NOTE.C6, E);
-  n(NOTE.B5, E);
-  n(NOTE.A5, B);
-  r(B);
-
-  n(NOTE.A5, E);
-  n(NOTE.C6, B);
-  n(NOTE.D6, E);
-  n(NOTE.Eb6, E);
-  n(NOTE.F6, DQ);
-
-  n(NOTE.A6, DH + B);  // big climax note!
-
-  // ---- VERSE 3: Return of main theme ----
-  r(E);
-  n(NOTE.E5, E);       // pickup
-
-  n(NOTE.A5, B);
-  n(NOTE.C6, E);
-  n(NOTE.B5, E);
-  n(NOTE.A5, DQ);
-
-  n(NOTE.E6, E);
-  n(NOTE.D6, B);
-  n(NOTE.B5, DQ);
-
-  n(NOTE.C6, B);
-  n(NOTE.A5, H);
-  r(B);
-
-  // ---- FINAL PHRASE ----
-  n(NOTE.A5, E);
-  n(NOTE.C6, B);
-  n(NOTE.A5, E);
-  n(NOTE.C6, DQ);
-
-  n(NOTE.B5, DH + H);  // long, final note
+  // Phrase 1: "Happy Birthday to you"
+  n(NOTE.C4, E); n(NOTE.C4, E); n(NOTE.D4, Q); n(NOTE.C4, Q); n(NOTE.F4, Q); n(NOTE.E4, DH);
+  // Phrase 2: "Happy Birthday to you"
+  n(NOTE.C4, E); n(NOTE.C4, E); n(NOTE.D4, Q); n(NOTE.C4, Q); n(NOTE.G4, Q); n(NOTE.F4, DH);
+  // Phrase 3: "Happy Birthday dear [name]"
+  n(NOTE.C4, E); n(NOTE.C4, E); n(NOTE.C5, Q); n(NOTE.A4, Q); n(NOTE.F4, Q); n(NOTE.E4, Q); n(NOTE.D4, H);
+  // Phrase 4: "Happy Birthday to you"
+  n(NOTE.Bb4, E); n(NOTE.Bb4, E); n(NOTE.A4, Q); n(NOTE.F4, Q); n(NOTE.G4, Q); n(NOTE.F4, DH);
 
   return notes;
 }
 
 const SONGS = {
-  hedwigs: {
-    title: "Hedwig's Theme",
-    notes: buildHedwigs()
+  happybirthday: {
+    title: "Happy Birthday",
+    notes: buildHappyBirthday()
   }
 };
 
-// ================================================================
-// PIANO KEYBOARD CONFIG
-// ================================================================
-const PIANO_LOW  = 60;   // C4
-const PIANO_HIGH = 93;  // A6 — full range of Hedwig's Theme
+const PIANO_LOW  = 48;  // C3 — Loog x Duolingo keyboard start
+const PIANO_HIGH = 84;  // C6 — Loog x Duolingo keyboard end
 
 const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const WHITE_IN_OCTAVE  = new Set([0,2,4,5,7,9,11]);
@@ -748,7 +659,7 @@ const BLACK_IN_OCTAVE  = new Set([1,3,6,8,10]);
 // Black key offset (fraction of white-key-width from octave left edge to black key center)
 const BLACK_OFFSET_MAP = { 1:0.68, 3:1.68, 6:3.65, 8:4.65, 10:5.65 };
 
-const WK_W = 40, WK_H = 90, BK_W = 25, BK_H = 58;
+const WK_W = 34, WK_H = 90, BK_W = 22, BK_H = 58;  // 22 white keys × 34px ≈ 748px
 
 let keyLayout = {};  // midi → { x, w, isBlack }
 
@@ -1069,7 +980,7 @@ function initKeyboardInput() {
 let currentSong  = null;
 let isPlaying    = false;
 let loopStart    = 0;
-let loopEnd      = 52;
+let loopEnd      = 17;
 let loopDuration = 52;
 let songPos      = 0;       // current song position in seconds
 let pausedAt     = 0;       // position when paused
