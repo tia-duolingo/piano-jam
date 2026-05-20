@@ -1425,13 +1425,7 @@ async function startLesson(songId) {
   document.getElementById('screen-home').classList.add('hidden');
   document.getElementById('screen-lesson').classList.remove('hidden');
 
-  // Request landscape — best-effort, requires user gesture (works on most Android Chrome)
-  try {
-    const el = document.documentElement;
-    const fs = el.requestFullscreen || el.webkitRequestFullscreen;
-    if (fs) await fs.call(el).catch(() => {});
-    if (screen.orientation?.lock) await screen.orientation.lock('landscape').catch(() => {});
-  } catch(e) {}
+  // Fullscreen intentionally disabled
 
   // Audio init (must follow user gesture)
   try { await initAudio(); } catch(e) { console.error('initAudio failed:', e); }
