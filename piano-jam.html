@@ -1225,11 +1225,8 @@ function playFrame(perfNow) {
     if (note.time > schedTarget) break;
     if (note.time < loopStart) continue;
 
-    // In practice mode, skip the pending note — user plays it
-    if (waitMode && pendingAtLine && note === pendingAtLine) {
-      scheduledUpTo = note.time;
-      continue;
-    }
+    // In practice mode, never auto-play notes — user presses trigger all audio
+    if (waitMode) { scheduledUpTo = note.time; continue; }
 
     const delayMs = Math.max(0, (note.time - songPos) * 1000);
     const midi = note.midi, dur = note.dur, g = gen;
