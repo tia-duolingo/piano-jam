@@ -257,6 +257,35 @@
       font-weight: 600;
     }
 
+    .scrub-markers {
+      position: relative;
+      height: 26px;
+      margin-bottom: 4px;
+    }
+    .scrub-marker-btn {
+      position: absolute;
+      transform: translateX(-50%);
+      background: #ede9fe;
+      color: #7c3aed;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1.5px solid #c4b5fd;
+      cursor: pointer;
+      line-height: 1.4;
+      white-space: nowrap;
+      touch-action: manipulation;
+      user-select: none;
+      transition: background 0.1s, color 0.1s;
+    }
+    .scrub-marker-btn:active,
+    .scrub-marker-btn.active {
+      background: #7c3aed;
+      color: #fff;
+      border-color: #7c3aed;
+    }
+
     .dual-range-wrap {
       position: relative;
       height: 32px;
@@ -585,6 +614,7 @@
       <span class="scrub-heading">Loop Region</span>
       <span class="loop-time-display" id="loop-time-display">0:00 – 0:17</span>
     </div>
+    <div class="scrub-markers" id="scrub-markers"></div>
     <div class="dual-range-wrap" id="dual-range-wrap">
       <div class="range-track-bg"></div>
       <div class="range-fill-bar" id="range-fill-bar"></div>
@@ -646,7 +676,13 @@ function buildHappyBirthday() {
 const SONGS = {
   happybirthday: {
     title: "Happy Birthday",
-    notes: buildHappyBirthday()
+    notes: buildHappyBirthday(),
+    sections: [
+      { label: "Happy Birthday to you",   time: 0    },
+      { label: "Happy Birthday to you",   time: 4.2  },
+      { label: "Happy Birthday dear…",    time: 8.4  },
+      { label: "Happy Birthday to you",   time: 12.6 }
+    ]
   }
 };
 
@@ -1363,6 +1399,34 @@ function initScrubBar() {
   updateScrubFill();
   updateLoopLabel();
 
+  // Render section marker pills
+  const markersEl = document.getElementById('scrub-markers');
+  markersEl.innerHTML = '';
+  if (currentSong.sections) {
+    currentSong.sections.forEach((sec, i) => {
+      const pct = (sec.time / songTotalDur) * 100;
+      const btn = document.createElement('button');
+      btn.className = 'scrub-marker-btn';
+      btn.textContent = sec.label;
+      btn.style.left = `${Math.min(pct, 85)}%`;
+      btn.addEventListener('click', () => {
+        const nextTime = (i + 1 < currentSong.sections.length)
+          ? currentSong.sections[i + 1].time : songTotalDur;
+        loopStart = sec.time; loopEnd = nextTime;
+        loopDuration = loopEnd - loopStart; pausedAt = loopStart;
+        document.getElementById('range-start').value = (loopStart / songTotalDur) * 1000;
+        document.getElementById('range-end').value   = (loopEnd   / songTotalDur) * 1000;
+        updateScrubFill(); updateLoopLabel();
+        markersEl.querySelectorAll('.scrub-marker-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (isPlaying) startPlayback();
+      });
+      markersEl.appendChild(btn);
+    });
+  }
+  const clearActiveMarker = () =>
+    markersEl.querySelectorAll('.scrub-marker-btn').forEach(b => b.classList.remove('active'));
+
   rs.oninput = () => {
     let sv = +rs.value, ev = +re.value;
     if (sv >= ev - 20) { rs.value = ev - 20; sv = +rs.value; }
@@ -1382,6 +1446,7 @@ function initScrubBar() {
     if (isPlaying) { startPlayback(); }
     updateScrubFill();
     updateLoopLabel();
+    clearActiveMarker();
   };
 }
 
